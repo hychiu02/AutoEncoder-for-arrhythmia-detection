@@ -1,101 +1,320 @@
+###### tags: `nsd22_au`
 # AutoEncoder for arrhythmia detection
 
 ## Basic information
-
-[GitHub](https://github.com/hychiu02/AutoEncoder-for-arrhythmia-detection)
-
-Arrhythmia dectection using ECG signal
+Simple, lightweight MultiLayer Perceptron(MLP) framework
+Arrhythmia dectection using Intracardiac electrograms(IEGMs) signal
+![](https://i.imgur.com/ZNDBBx6.png)
 
 ## Problem to solve
-Heart diseases are one of the significant reasons for death all over the planet. To perform arrhythmia detection, Electrocardiograms(ECGs) is used to monitor hte functioning of heart by capturing electrical activity. Because of needs of real-time inference, the model sizeand  parameters should be small, autoencoder seems to be a good choice. I want to develop a method to build, train and inference a MLP model with C++. 
+Heart diseases are one of the significant reasons for death all over the planet. To perform arrhythmia detection, Electrocardiograms(ECGs) and IEGMs are used to monitor hte functioning of heart by capturing electrical activity. Because of needs of real-time inference, the model sizeand  parameters should be small, autoencoder seems to be a good choice. I want to develop a simple ML framework to build, train and inference a MLP model with C++. 
+
+There are two main algorithm to implement:
+- Feed Forward
+    - Every neuron will perform $z=\sum^n_{i=1}{w_ix_i + b}$
+    - Sum of each neuron will pass to an activation $\sigma$ and the sum of neurons within this layer will be the input of next layer
+- Backpropogation 
+    - weights of neurons update by $w_i = wi-\eta\frac{\partial C}{\partial w_i}$
+    - $\frac{\partial C}{\partial w_i}$ can be efficiently computed from output layer to input layer through chain rule  $\frac{\partial C}{\partial w_i} = \frac{\partial z}{\partial w_i} \frac{\partial a}{\partial z} \frac{\partial C}{\partial a}$
+        $\frac{\partial z}{\partial w_i}$ is equal to the output of previous layer
+        $\frac{\partial a}{\partial z}$ is value of devirative activation function
+        for $\frac{\partial C}{\partial a}$, we considered two cases
+        - neuron in output layer
+        $\frac{\partial C}{\partial a}$ take the MSE loss($C = \frac{1}{n}\sum^n_1(y-a)^2$) which used in this project as an example, let u be `y - a`, y is ground truth of this neuron, and $x_i$ be the output of prevois layer(input to this layer and weighted by $w_i$)
+        $\frac{\partial C}{\partial a} = \frac{\partial u}{\partial a} \frac{\partial C}{\partial u}, \frac{\partial u}{\partial a} is -1, \frac{\partial C}{\partial u} is \frac{2}{n}(y-a)$
+        so we can easly calculate gradient of each neuron in output layer by
+        $\frac{\partial C}{\partial w_i} = x_i {\sigma}^{'}(z)(-1)(\frac{2}{n}(y-a))$
+        - neuron in hidden layer
+        $\frac{\partial C}{\partial a}$ is weight sum of gradient of next layer  
+        $\frac{\partial C}{\partial w_i} = x_i {\sigma}^{'}(z)\sum^m_1w_{ji}\frac{\partial C}{\partial z_j}$
 
 ## Prospective Users
-people who want to do abnormal sound detection, cardiac diseases classification or other regression or classification problem can take advantage of my implementation
+People who want to develop a simple MLP model for abnormal sound detection, cardiac diseases classification or other regression or classification problems using a lightweight C++ library.
 
 ## System Architecture
-### Currently I implement functions to read csv files and train on ubuntu 20.04, I did not implement fucntions to read other datatypes and try on other platforms.  
+**This simple firmwork is currently tested on Ubuntu 20.04**
 There will be a Node class for storing weight, a Layer class with Nodes for forward and backward weights calculation and a MLP class containing Layers  
+
+![](https://i.imgur.com/Q72iF3y.png)
+
+
+
 The flow will look like this
-![](Flow.png)
+![](https://i.imgur.com/4mRhLqb.png)
+
 
 
 ## API Description
-- Dataset class
+- Neuron class
+```c++
+class Neuron
+{
+public:
+    // If wanting to load neuron, can use this constructor
+    Neuron();
+    // Copy constructor
+    Neuron(Neuron const &);
+    // Copy
+    Neuron & operator=(Neuron const &);
+    // Move
+    Neuron & operator=(Neuron &&);
+    // Use this constructor when building network
+    Neuron(std::size_t, bool, double);
+    // Destructor
+    ~Neuron();
+    // Use when layer want to pass result to next layer or using previous result to update weight
+    double get_output() const;
+    // Use for forward pass
+    void forward(const std::vector<double>, std::function<double(double)> &);
+    // Use when prev layer require layer's gradient while backward pass (dC/dz')
+    double get_grad() const;
+    // Use for backward pass
+    void update_grad(std::function<double(double)> &, double);
+    // Use when prev layer require layer's gradient(dz'/da)
+    const std::vector<double> & get_weights() const;
+    // Use for backward pass
+    void update_weights(const std::vector<double> &, double);
+    // Use for saving model
+    void save_neuron(FILE) const;
+    // Use for loading model
+    void load_neuron(FILE * file);
+    // Use for displaying information about this neuron
+    friend std::ostream & operator<<(std::ostream &, const Neuron &);
+};
 ```
- Dataset
-  the constructor initialize Dataset
-  - parameters:
-    dataPath: ECG file path
-    
-~Dataset
-  destructor
-  
-len
-  get dataset length
-  - return :
-    size_t: return dataset length
+- Layer class
+```c++
+class Layer
+{
+public:
+     // If wanting to load layer, can use this constructor
+    Layer();
+    // Use this constructor when building network
+    Layer(std::size_t, std::size_t, std::string, bool, double);
+    // Destructor
+    ~Layer();
+    // Use when layer want to pass result to next layer or using previous result to update weight
+    std::vector<double> get_output();
+    // Use while building a vector to calculate derivative errors (dC/dz)
+    std::size_t get_num_neurons();
+    // In MLP level, access neurons in this layer directively to get gradients and weights 
+    std::vector<Neuron> & get_neurons();
+    // Use for forward pass
+    void forward(const std::vector<double> &);
+    // Use for backward pass
+    void update_grad(const std::vector<double> &);
+    // Use for backward pass
+    void update_weights(const std::vector<double> & , double);
+    // Use for saving model
+    void save_layer(FILE * file) const;
+    // Use for loading model
+    void load_layer(FILE * file);
+    // Use for displaying information about this layer
+    friend std::ostream & operator<<(std::ostream &, const Layer &);
+};
 ```
-
 - MLP class
+```c++
+class MLP
+{
+public:
+     // If wanting to load mlp, can use this constructor
+    MLP();
+    // Use this constructor when building network
+    MLP(std::vector<std::size_t>, std::vector<std::string>, bool, double);
+    // Destructor
+    ~MLP();
+    // Use for forward pass
+    void forward(std::vector<double> &);
+    // Use for getting output of output layer
+    std::vector<double> get_output();
+    // Use for inference one data
+    std::vector<double> fit(std::vector<double> &);
+    // Use for backpropogation
+    void backward(std::vector<double> &, std::vector<double> &, double);
+    // Use for training
+    void train(Dataset &, Dataset &, double, std::size_t, std::string);
+    // Use for validation
+    double test(Dataset &);
+    // Use for inferencing
+    std::vector<std::vector<double>> inference(Dataset &);
+    // Use for saving model
+    void save_mlp(const std::string &) const;
+    // Use for loading model
+    void load_mlp(const std::string &);
+    // Use for displaying information of this model
+    friend std::ostream & operator<<(std::ostream &, const MLP &)
+};
 ```
-MLP
-  the constructor use layersNodes, layersActivFuncs
-  - parameters:
-    layersNodes (vector<uint8_t>): number of nodes in each layer
-    layersActivFuncs (vector<string>): activation function of each layer
 
-~MLP
-  destructor
-  
-load_model
-  load trained model
-  - parameters
-    modelPath (string): path of model to be loaded
-  - return
-    (bool): load successfully or not
-
-forward
-  get prediction of given data from model
-  - parameters:
-    X (vector<float>): data to predeict
-  - return
-    y (vector<float>): prediction of given input data
-
-backward
-  update weights of each node in model
-  - parameters
-    loss (vector<float>): loss calcuated in final layer
-    
-save_model
-  save trained model
-  - parameters:
-    save_path (string): path to save model
-
+- Dataset class
+```c++
+class Dataset
+{
+public:
+    // Constructor
+    Dataset(std::vector<std::string>);
+    // Use for getting number of data in this dataset
+    std::size_t get_dataset_size() const;
+    // Use for getting all file paths in this dataset
+    const std::vector<std::string> & get_fpaths() const;
+    // Virtual method for different dataset
+    virtual void load_data(std::size_t) {}
+    // Use for getting current file index
+    std::size_t get_idx() const;
+    // Use for getting input vector
+    const std::vector<double> & get_input_vector() const;
+    // Use for getting input size
+    std::size_t get_input_size() const;
+    // Use for getting ground truth
+    const std::vector<double> & get_output_vector() const;
+    // Use for getting output size
+    std::size_t get_output_size() const;
+    // Use for displaying information of this dataset
+    friend std::ostream & operator<<(std::ostream &, Dataset const &)
+};
 ```
+- Gate_Dataset class
+```c++
+
+class Gate_Dataset : public Dataset
+{
+public:
+    // Constructor
+    Gate_Dataset(std::vector<std::string>);
+    // Use for loading data to dataset(so that mlp can fetch one data)
+    void load_data(std::size_t) override;
+    // Use for reading all data from a txt file for the gate
+    void read_file();
+};
+```
+- VA_Dataset class
+```c++
+class VA_Dataset : public Dataset
+{
+public:
+    // Constructor
+    VA_Dataset(std::vector<std::string>);
+    // Use for reading just one data from a txt and loaded into dataset
+    void load_data(std::size_t idx) override;
+};
+```
+- Activation class
+``` c++
+class Activation
+{
+public:
+    // Constructor
+    Activation();
+    // Destructor
+    ~Activation();
+    // Use for getting activation function
+    std::function<double(double)> get_activation_func(std::string func_name)
+    {
+        return activation_func_map[func_name].first;
+    }
+    // Use for getting derivative activation function
+    std::function<double(double)> get_deriv_activation_func(std::string);rn activation_func_map[func_name].second;
+    }
+    // Use for getting activation, derivative activation function pair
+    std::pair<std::function<double(double)> , std::function<double(double)>> & get_pair(std::string);
+    // Linear function
+    static inline double linear(double);
+    // Derivative of linear function
+    static inline double deriv_linear(double);
+    // Sigmoid function
+    static inline double sigmoid(double);
+    // Derivative of sigmoid function
+    static inline double deriv_sigmoid(double);
+
+private:
+    // Add new activation, derivative activation function pair
+    void add_new_pair(std::string, std::function<double(double)>, std::function<double(double)>);
+};
+```
+- helper function
+```c++
+// Use for getting all file name with path in data director
+std::vector<std::string> get_fpaths(std::string);
+// Mean Square Error loss function
+double mse(std::vector<double> &, std::vector<double> &)
+// Derivative Mean Square Error loss function
+std::vector<double> deriv_mse(std::vector<double> &, std::vector<double> &)
+```
+
 
 ## Engineering Infrastructure
 1. Automatic build system and how to build your program: GNU make
 2. Version control: Git
 3. Testing framework: Pytest
+4. Wrapping C++ file: Pybind11
 
-## Schedule
+## Test Codes
+Test codes are in `test` folder
+Test files are in polyglot scripts
+For `test_neuron.py`
+In `Ubuntu 20.04` you can use `./test/test_neuron` to run the script and testing automaticly
+Or Using `make neuron_test` command to do unit test
 
-- Planning phase (9/16~10/31): Plan the architecture for overall program and study the detail of implementation like how back propogation works
-- Week 1(10/31): Complete the class part Node, Layer, MLP
-- Week 2(11/07): Component testing, and implement backpropagation
-- Week 3(11/14): Complete the class part Dataset and manage data
-- Week 4(11/21): Complete fuction part train, test 
-- Week 5(11/28): Debug and make sure system 
-- Week 6(12/05): Test performance(maybe compare inference time and accuracy with same model on pytorch eager mode)
-- week 7(12/12~): prepare presentation
+## Example
+Using command `make example_va` can execute example `example_va.cpp` to train a Autoencoder on a small IEGM data set then save it
+Basically do the following things
+- Read data
+- Configure MLP
+- Train MLP on the dataset
+- Load the model with best weights
+- Test accuracy
+```C++
+// ... include header
 
-After class:
-  Try to deal with I/O among different platform.
-  Try to map this implement to gpu(cuda)
+int main(int argc, char * argv[])
+{   
+    ...
+   
+    std::string train_set_path = data_dir_path + "train";
+    std::string val_set_path = data_dir_path + "val";
+
+    // Get train set
+    std::vector<std::string> file_paths = get_fpaths(train_set_path);
+    VA_Dataset VA_train_set(file_paths);
+    // Get val set
+    file_paths = get_fpaths(val_set_path);
+    VA_Dataset VA_val_set(file_paths);
+
+    
+    std::size_t num_inputs = VA_train_set.get_input_size();
+    std::size_t num_outputs = VA_train_set.get_output_size();
+    std::vector<std::size_t> num_layer_neurons {num_inputs, 512, 128, 32, 8, num_outputs};
+    std::vector<std::string> activation_func_name {"sigmoid", "sigmoid", "sigmoid", "sigmoid","linear"};
+
+    MLP my_mlp = MLP(num_layer_neurons, activation_func_name, false);
+
+    std::vector<double> inputs = VA_train_set.get_input_vector();
+    std::vector<double> ground_truth = VA_train_set.get_output_vector();
+    std::vector<double> preds = my_mlp.fit(inputs);
+    std::string model_name = "./saved_model/autoencoder_va";
+
+    ...
+
+    my_mlp.train(VA_train_set, VA_val_set, 0.05, 100, model_name);
+    
+    ...
+
+    my_mlp.load_mlp(model_name+"_best.mlp");
+
+    ...
+
+    std::cout << "Trained acc: " << acc << "\n";
+
+    return 0;
+}
+```
+
+## To improve 
 
 ## References
-
-- [MLP](https://chih-sheng-huang821.medium.com/%E6%A9%9F%E5%99%A8%E5%AD%B8%E7%BF%92-%E7%A5%9E%E7%B6%93%E7%B6%B2%E8%B7%AF-%E5%A4%9A%E5%B1%A4%E6%84%9F%E7%9F%A5%E6%A9%9F-multilayer-perceptron-mlp-%E5%90%AB%E8%A9%B3%E7%B4%B0%E6%8E%A8%E5%B0%8E-ee4f3d5d1b41)
-- [AutoEncoder](https://medium.com/%E5%BC%B1%E5%BC%B1%E9%96%8B%E7%99%BC%E5%A5%B3%E5%AD%90-%E5%9C%A8%E6%9D%B1%E4%BA%AC%E7%9A%84%E9%96%8B%E7%99%BC%E8%80%85%E4%BA%BA%E7%94%9F/autoencoder-%E6%88%91%E5%B0%8D%E4%B8%8D%E8%B5%B7%E4%BD%A0%E4%B9%8B-%E9%87%8D%E6%96%B0%E8%AA%8D%E8%AD%98autoencoder-%E7%AC%AC%E4%B8%80%E7%AF%87-d970d1ad9971)
-- [Artificial Neural Network Based Cardiac Arrhythmia Classification Using ECG
-Signal Data](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=5559887)
+- [Neural Networks, Multilayer Perceptron and the Backpropagation Algorithm](https://medium.com/@tiago.tmleite/neural-networks-multilayer-perceptron-and-the-backpropagation-algorithm-a5cd5b904fde)
+- [Understanding Backpropagation Algorithm](https://towardsdatascience.com/understanding-backpropagation-algorithm-7bb3aa2f95fd)
+- [Make a Neural Net Simulator in C++](https://www.millermattson.com/dave/?p=54)
+- [MLP (github repo by davidalbertonogueira
+)](https://github.com/davidalbertonogueira/MLP)

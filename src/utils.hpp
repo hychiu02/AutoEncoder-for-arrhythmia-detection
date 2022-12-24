@@ -14,12 +14,13 @@
 class Activation
 {
 public:
+    // Constructor
     Activation()
     {
         add_new_pair("linear", linear, deriv_linear);
         add_new_pair("sigmoid", sigmoid, deriv_sigmoid);
     }
-
+    // Destructor
     ~Activation()
     {
     }
@@ -33,22 +34,22 @@ public:
     {
         return activation_func_map[func_name].second;
     }
-
+    // Use for getting activation function
     std::pair<std::function<double(double)> , std::function<double(double)>> & get_pair(std::string func_name)
     {
         return activation_func_map[func_name];
     }
-
+    // Use for getting derivative activation function
     static inline double linear(double x)
     {
         return  x;
     }
-
+    // Use for getting activation, derivative activation function pair
     static inline double deriv_linear(double x)
     {
         return 1;
     }
-
+    // Sigmoid function
     static inline double sigmoid(double x)
     {
         return 1 / (1 + exp(-x));
@@ -62,7 +63,7 @@ public:
 
 private:
     std::unordered_map<std::string , std::pair<std::function<double(double)> , std::function<double(double)> >> activation_func_map;
-
+    // Add new activation, derivative activation function pair
     void add_new_pair(std::string func_name, std::function<double(double)> func, std::function<double(double)> deriv_func)
     {
         if(activation_func_map.count(func_name))
@@ -76,7 +77,7 @@ private:
     }
 
 };
-
+// Mean Square Error loss function
 double mse(std::vector<double> & preds, std::vector<double> & ground_truth)
 {
     if((preds.size() == ground_truth.size()) || ground_truth.size()==1)
@@ -107,7 +108,7 @@ double mse(std::vector<double> & preds, std::vector<double> & ground_truth)
         throw new std::logic_error("Different input size between prediciton result and ground truth");
     }
 }
-
+// Derivative Mean Square Error loss function
 std::vector<double> deriv_mse(std::vector<double> & preds, std::vector<double> & ground_truth)
 {
     if((preds.size() == ground_truth.size()) || ground_truth.size()==1)

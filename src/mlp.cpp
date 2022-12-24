@@ -31,6 +31,7 @@ PYBIND11_MODULE(_mlp, mod)
         .def("backward", &MLP::backward)
         .def("save_mlp", &MLP::save_mlp)
         .def("load_mlp", &MLP::load_mlp)
+        .def("train", &MLP::train)
         .def("test", &MLP::test)
-        .def("train", &MLP::train);
+        .def("inference", &MLP::inference);
 }

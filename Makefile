@@ -1,5 +1,5 @@
 CXX           := g++
-CXXFLAGS      := -Wall -shared -std=c++17 -fPIC
+CXXFLAGS      := -O3 -Wall -shared -std=c++17 -fPIC
 
 HEADERPATH    := ./src
 SOURCEPATH    := ./src
@@ -44,11 +44,11 @@ dataset: $(SOURCEPATH)/dataset.cpp $(HEADERPATH)/dataset.hpp
 	$(CXX) $(CXXFLAGS) -I$(HEADERPATH) -I$(PYINCLUDE) ${PYBINDINCLUDE} $< -o _dataset${PYCONFIG}
 
 example_and: $(SOURCEPATH)/example_and.cpp $(HDRS)
-	$(CXX) -std=c++17 -I$(HEADERPATH) -o $@ $<
+	$(CXX) -O3 -std=c++17 -I$(HEADERPATH) -o $@ $<
 	./$@
 
 example_va: $(SOURCEPATH)/example_va.cpp $(HDRS)
-	$(CXX) -std=c++17 -I$(HEADERPATH) -o $@ $<
+	$(CXX) -O3 -std=c++17 -I$(HEADERPATH) -o $@ $<
 	./$@
 
 example_va_py: $(SOURCEPATH)/example_va.py mlp dataset

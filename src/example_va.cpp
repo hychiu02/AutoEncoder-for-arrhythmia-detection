@@ -4,10 +4,8 @@
 #include <vector>
 #include <ctime>
 
-#include <filesystem>
-#include <sys/stat.h>
-#include <fstream>
-#include <cstdlib>
+#include <chrono>
+
 
 #include "neuron.hpp"
 #include "utils.hpp"
@@ -67,24 +65,36 @@ int main(int argc, char * argv[])
 
     std::cout << "Origin acc: " << my_mlp.test(VA_val_set) << "\n";
 
-    time_t start_t;
-    time_t end_t;
+    double training_time = 0.0;
+    double inference_time = 0.0;
+    double acc = 0.0;
+    std::cout << "Start training\n";
+    for(std::size_t i=0; i<5; i++)
+    {
+        auto start = std::chrono::steady_clock::now();
+        my_mlp.train(VA_train_set, VA_val_set, 0.05, 500, model_name);
+        auto end = std::chrono::steady_clock::now();
+        training_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    }
 
-    start_t = time(NULL);
-    my_mlp.train(VA_train_set, VA_val_set, 0.05, 100, model_name);
-    end_t = time(NULL);
-
-    std::cout << "Training time: " << end_t - start_t << "\n";
+    std::cout << "Training time: " << training_time / 1000000 / 5 << "\n";
 
     my_mlp.load_mlp(model_name+"_best.mlp");
 
-    double acc = 0.0;
-    start_t = time(NULL);
     acc = my_mlp.test(VA_val_set);
-    end_t = time(NULL);
-    std::cout << "Inference time: " << end_t - start_t << "\n";
-
     std::cout << "Trained acc: " << acc << "\n";
+
+    std::cout << "Start inferencing\n";
+    for(std::size_t i=0; i<5; i++)
+    {
+        auto start = std::chrono::steady_clock::now();
+        my_mlp.inference(VA_train_set);
+        auto end = std::chrono::steady_clock::now();
+        inference_time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    }
+    std::cout << "Inference time: " << inference_time / 1000000 / 5<< "\n";
+
+    
 
     return 0;
 }

@@ -26,19 +26,27 @@ def main():
 
     mlp = MLP(num_layer_neurons, layer_activation_funcs, False, 0.5)
 
+    training_time = 0.0
+    inference_time = 0.0
+
     print("Start training")
-    start_t = time.time()
-    mlp.train(train_set, val_set, 0.3, 500, model_name)
-    end_t = time.time()
-    print("Training time: {}".format(end_t - start_t))
+
+    for i in range(5):
+        start_t = time.time()
+        mlp.train(train_set, val_set, 0.3, 500, model_name)
+        end_t = time.time()
+        training_time += end_t - start_t
+    print("Training time: {}".format(training_time / 5))
 
     mlp.load_mlp("{}_best.mlp".format(model_name))
 
-    print('Start inference')
-    start_t = time.time()
-    mlp.test(train_set)
-    end_t = time.time()
-    print("Inference time: {}".format(end_t - start_t))
+    for i in range(5):
+        print('Start inference')
+        start_t = time.time()
+        mlp.test(train_set)
+        end_t = time.time()
+        inference_time += end_t - start_t
+    print("Inference time: {}".format(inference_time / 5))
 
 
 if __name__ == '__main__':

@@ -75,7 +75,7 @@ public:
 // }
 // std::cout << "\n";
     }
-
+    // Destructor
     ~Neuron()
     {
         m_num_inputs = 0;
@@ -99,6 +99,7 @@ public:
             m_inner_prod = 0.0;
             m_output = 0.0;
             // Naive inner prod
+
             for(std::size_t i=0; i<m_num_inputs; i++)
             {
                 m_inner_prod += m_weights[i] * prev_layer_out[i];
@@ -157,14 +158,14 @@ public:
 // }
 // std::cout << "\n";
     }
-
+    // Use for saving model
     void save_neuron(FILE * file) const
     {
         fwrite(&m_num_inputs, sizeof(m_num_inputs), 1, file);
         fwrite(&m_weights[0], sizeof(m_weights[0]), m_weights.size(),file);
         fwrite(&m_bias, sizeof(m_bias), 1, file);
     }
-
+    // Use for loading model
     void load_neuron(FILE * file)
     {
         m_weights.clear();
@@ -174,7 +175,7 @@ public:
         fread(&m_weights[0], sizeof(m_weights[0]), m_weights.size(), file);
         fread(&m_bias, sizeof(m_bias), 1, file);
     }
-
+    // Use for displaying information about this neuron
     friend std::ostream & operator<<(std::ostream & ostr, const Neuron & neuron)
     {
         ostr << "num inputs: " << neuron.m_num_inputs << "\n";

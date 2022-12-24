@@ -17,7 +17,7 @@ def main() -> None:
     bs = 1
     # num_workers = len(os.sched_getaffinity(0))
     num_workers = 0
-    epochs = 100
+    epochs = 500
     print("Start loading training data")
     
     train_set = VA_Dataset(data_path + 'train')
@@ -39,16 +39,26 @@ def main() -> None:
     print("Start initial trainer")
     trainer = VATrainer(net, optimizer, criterion, "torch_test")
 
+    training_time = 0.0
     print("Start training")
-    start_t = time.time()
-    trainer.train(epochs, train_loader, val_loader)
-    end_t = time.time()
-    print("Training time: {}".format(end_t - start_t))
+    for i in range(5):        
+        start_t = time.time()
+        trainer.train(epochs, train_loader, val_loader)
+        end_t = time.time()
+        training_time += end_t - start_t
+    print("Training time: {}".format(training_time/5))
+
+    _, acc = trainer.test(val_loader)
+    print('Trained acc: {}'.format(acc))
+
+    inference_time = 0.0
 
     print('Start inference')
-    start_t = time.time()
-    trainer.inference(train_loader)
-    end_t = time.time()
+    for i in range(5):
+        start_t = time.time()
+        trainer.inference(val_loader)
+        end_t = time.time()
+        inference_time += end_t - start_t
     print("Inference time: {}".format(end_t - start_t))
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ public:
         m_activation_func = act_pair.first;
         m_deriv_activation_func = act_pair.second;
     }
-
+    // Destructor
     ~Layer()
     {
         m_num_inputs = 0;
@@ -111,7 +111,7 @@ public:
             throw new std::logic_error("Different size between deriv_error and m_num_inputs of Layer during updating weights");
         }
     }
-
+    // Use for saving model
     void save_layer(FILE * file) const
     {
         fwrite(&m_num_inputs, sizeof(m_num_inputs), 1, file);
@@ -127,7 +127,7 @@ public:
             m_neurons[i].save_neuron(file);
         }
     }
-
+    // Use for loading model
     void load_layer(FILE * file)
     {
         m_neurons.clear();
@@ -150,7 +150,7 @@ public:
             m_neurons[i].load_neuron(file);
         }
     }
-
+    // Use for displaying information about this layer
     friend std::ostream & operator<<(std::ostream & ostr, const Layer & layer)
     {
         ostr << "num inputs: " << layer.m_num_inputs << "\n";

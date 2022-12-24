@@ -9,8 +9,6 @@
 #include "layer.hpp"
 #include "dataset.hpp"
 
-using namespace std;
-
 class MLP
 {
 public:
@@ -54,7 +52,7 @@ public:
             }
         }
     }
-
+    // Destructor
     ~MLP()
     {
         m_num_layers = 0;
@@ -83,19 +81,19 @@ public:
             throw new std::logic_error("Different size between prev_layer_out and m_num_inputs of Layer during forwarding");
         }        
     }
-
+    // Use for getting output of output layer
     std::vector<double> get_output()
     {
         return m_layers.back().get_output();
     }
-
+    // Use for inference one data
     std::vector<double> fit(std::vector<double> & inputs)
     {
         forward(inputs);
         
         return m_layers.back().get_output();
     }
-
+    // Use for backpropogation
     void backward(std::vector<double> & inputs, std::vector<double> & ground_truth, double learning_rate)
     {
         if(inputs.size() == m_num_inputs && ground_truth.size() == m_num_outputs)
@@ -117,6 +115,7 @@ public:
                 
                 gradients.resize(m_layers[i].get_num_neurons());
                 // Calculate gradient of each neuron in this layer
+  
                 for(std::size_t j=0; j<m_layers[i].get_num_neurons(); j++)
                 {
                     gradients[j] = 0.0;
@@ -128,7 +127,7 @@ public:
                 m_layers[i].update_grad(gradients);
             }
 
-            // Update weights after updating gradients
+            // Update weights after updating gradientsW
             // pre_layer_out here is exactly outputs of previous layer
             for(std::size_t i=m_num_layers-1; i>0; i--)
             {
@@ -151,7 +150,7 @@ public:
             }
         }
     }
-
+    // Use for training
     void train(Dataset & train_set, Dataset & val_set, double learning_rate, std::size_t max_iterations, std::string model_name)
     {
         std::size_t stale = 0;
@@ -164,9 +163,9 @@ public:
             for(std::size_t j=0; j<train_set.get_dataset_size(); j++)
             {
                 train_set.load_data(j);
-                vector<double> input_vector = train_set.get_input_vector();
-                vector<double> ground_truth = train_set.get_output_vector();
-                vector<double> preds = fit(input_vector);
+                std::vector<double> input_vector = train_set.get_input_vector();
+                std::vector<double> ground_truth = train_set.get_output_vector();
+                std::vector<double> preds = fit(input_vector);
 /*
 std::cout << "inputs:       [";
 for(double element : input_vector)
@@ -212,7 +211,7 @@ std::cout << "]\n";
             }
         }
     }
-
+    // Use for validation
     double test(Dataset & dataset)
     {
         double acc = 0.0;
@@ -221,9 +220,9 @@ std::cout << "]\n";
         for(std::size_t j=0; j<dataset.get_dataset_size(); j++)
         {
             dataset.load_data(j);
-            vector<double> input_vector = dataset.get_input_vector();
-            vector<double> ground_truth = dataset.get_output_vector();
-            vector<double> preds = fit(input_vector);
+            std::vector<double> input_vector = dataset.get_input_vector();
+            std::vector<double> ground_truth = dataset.get_output_vector();
+            std::vector<double> preds = fit(input_vector);
 
             for(std::size_t i=0; i<preds.size(); i++)
             {
@@ -241,6 +240,24 @@ std::cout << "]\n";
         return acc;
     }
 
+    // Use for inferencing
+    std::vector<std::vector<double>> inference(Dataset & dataset)
+    {
+        std::vector<std::vector<double>> ret;
+
+        for(std::size_t j=0; j<dataset.get_dataset_size(); j++)
+        {
+            dataset.load_data(j);
+            std::vector<double> input_vector = dataset.get_input_vector();
+            std::vector<double> preds = fit(input_vector);
+
+            ret.emplace_back(preds);
+        }
+
+        return ret;
+    }
+
+    // Use for saving model
     void save_mlp(const std::string & fname) const
     {
         FILE * file;
@@ -255,7 +272,7 @@ std::cout << "]\n";
         }
         fclose(file);
     }
-
+    // Use for loading model
     void load_mlp(const std::string & fname)
     {
         FILE * file;
@@ -271,7 +288,7 @@ std::cout << "]\n";
         }
         fclose(file);      
     }
-
+    // Use for displaying information of this model
     friend std::ostream & operator<<(std::ostream & ostr, const MLP & mlp)
     {
         ostr << "num inputs: " << mlp.m_num_inputs << "\n";
