@@ -40,10 +40,14 @@ def main():
 
     mlp.load_mlp("{}_best.mlp".format(model_name))
 
+    acc = mlp.test(val_set)
+
+    print('Training acc: {}'.format(acc))
+
+    print('Start inference')
     for i in range(5):
-        print('Start inference')
         start_t = time.time()
-        mlp.test(train_set)
+        mlp.inference(train_set)
         end_t = time.time()
         inference_time += end_t - start_t
     print("Inference time: {}".format(inference_time / 5))

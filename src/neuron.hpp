@@ -138,7 +138,6 @@ public:
     {
         if(prev_layer_out.size() == m_num_inputs)
         {
-
             for(std::size_t i=0; i<m_num_inputs; i++)
             {
                 m_weights[i] -= prev_layer_out[i] * learning_rate * m_grad;

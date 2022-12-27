@@ -48,13 +48,14 @@ example_and: $(SOURCEPATH)/example_and.cpp $(HDRS)
 	./$@
 
 example_va: $(SOURCEPATH)/example_va.cpp $(HDRS)
-	$(CXX) -O3 -std=c++17 -I$(HEADERPATH) -o $@ $<
+	$(CXX) -O3 -std=c++17 -fopenmp -I$(HEADERPATH) -o $@ $<
 	./$@
 
 example_va_py: $(SOURCEPATH)/example_va.py mlp dataset
+	mv *.so src
 	python3 -m $(SOURCEPATH)/example_va
 
 .PHONY: clean
 
 clean:
-	rm -rf $(TRASH) 
+	rm -rf $(TRASH) src/*.so

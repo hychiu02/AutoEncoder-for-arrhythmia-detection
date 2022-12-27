@@ -115,7 +115,7 @@ public:
                 
                 gradients.resize(m_layers[i].get_num_neurons());
                 // Calculate gradient of each neuron in this layer
-  
+
                 for(std::size_t j=0; j<m_layers[i].get_num_neurons(); j++)
                 {
                     gradients[j] = 0.0;
